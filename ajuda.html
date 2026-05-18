@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>smarttab - Ajuda e Conexão</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <nav class="sidebar">
+            <img src="images/Ativo 11@4x-8.png" class="nav-icon" alt="Menu">
+            <div class="nav-links" id="menuLateral"></div>
+        </nav>
+
+        <main class="content">
+            <header class="main-header">
+                <div class="welcome-text">
+                    <button onclick="window.location.href='index.html'" style="background: var(--red-btn); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 10px;">← Voltar ao Painel</button>
+                    <h1>Central de Ajuda</h1>
+                    <p>Informações de conexão e rede local.</p>
+                </div>
+                <img src="images/Ativo 7@4x-8.png" class="logo">
+            </header>
+
+            <section class="form-container">
+                <h3 style="color: var(--primary-orange); margin-bottom: 20px;">🔗 Links de Acesso</h3>
+                
+                <div style="display: flex; gap: 30px; align-items: flex-start;">
+                    <div style="flex: 1;">
+                        <label>Acesso dos Garçons (Celular)</label>
+                        <div id="link-mobile" style="background:#000; padding:15px; border-radius:8px; border:1px solid #333; color:var(--primary-orange); font-family:monospace; margin-bottom:20px;">Carregando...</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; padding-top: 10px;">
+                        <label style="margin-bottom: 10px;">QR Code - Garçom</label>
+                        <div id="qrcode-mobile" style="background: white; padding: 10px; border-radius: 8px; border: 2px solid var(--primary-orange);"></div>
+                    </div>
+                </div>
+
+                <label style="margin-top: 20px;">Monitor da Cozinha (TV/Tablet)</label>
+                <div id="link-kitchen" style="background:#000; padding:15px; border-radius:8px; border:1px solid #333; color:var(--primary-orange); font-family:monospace; margin-bottom:20px;">Carregando...</div>
+                
+                <label style="margin-top: 20px;">Cardápio Digital (TV para Clientes)</label>
+                <div id="link-cardapio" style="background:#000; padding:15px; border-radius:8px; border:1px solid #333; color:var(--primary-orange); font-family:monospace; margin-bottom:20px;">Carregando...</div>
+                
+                <p style="font-size: 0.8rem; color: #666;">Nota: Todos os aparelhos devem estar conectados no mesmo Wi-Fi deste computador.</p>
+            </section>
+
+            <section class="form-container" style="margin-top: 20px;">
+                <h3 style="color: #fff; margin-bottom: 15px;">🛡️ Liberação de Rede (Firewall)</h3>
+                <p>Se os aparelhos não conectarem, execute este comando no <b>PowerShell (como Administrador)</b>:</p>
+                <code style="display:block; background:#000; color:#00ff00; padding:15px; border-radius:8px; margin-top:10px; font-size:0.9rem; border:1px solid #222;">
+                    New-NetFirewallRule -DisplayName "SmartTab Plus" -Direction Inbound -LocalPort 3000 -Protocol TCP -Action Allow
+                </code>
+            </section>
+
+            <section class="form-container" style="margin-top: 20px;">
+                <h3 style="color: var(--primary-orange); margin-bottom: 15px;">📺 Gerenciamento do Cardápio Digital</h3>
+                <p style="margin-bottom: 10px;"><b>Como funciona:</b></p>
+                <ul style="margin-left: 20px; color: #ccc; font-size: 0.95rem; line-height: 1.6;">
+                    <li>O cardápio digital é exibido em uma TV na área de atendimento</li>
+                    <li>Todos os produtos com descrição aparecem automaticamente no cardápio</li>
+                    <li>Produtos marcados como "Indisponível" desaparecem do cardápio e não aparecem na aba de pedidos</li>
+                    <li>O cardápio atualiza automaticamente a cada 10 segundos</li>
+                </ul>
+                <p style="margin-top: 15px; margin-bottom: 10px;"><b>Como gerenciar:</b></p>
+                <ul style="margin-left: 20px; color: #ccc; font-size: 0.95rem; line-height: 1.6;">
+                    <li>Acesse <b>Configuração → Gerenciar Catálogo de Produtos</b></li>
+                    <li>Adicione uma <b>Descrição</b> para cada produto (essa descrição aparecerá apenas no cardápio de TV)</li>
+                    <li>Use o botão <b>✗ Marcar Indis.</b> para remover um produto do cardápio e dos pedidos</li>
+                    <li>Use o botão <b>✓ Disponível</b> para reabilitar um produto marcado como indisponível</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Busca o IP do servidor local via API que já criamos no main.js
+        async function carregarLinksAjuda() {
+            const mobileBox = document.getElementById('link-mobile');
+            const kitchenBox = document.getElementById('link-kitchen');
+            const cardapioBox = document.getElementById('link-cardapio');
+            const qrcodeContainer = document.getElementById('qrcode-mobile');
+
+            try {
+                // Tenta pegar o IP usando o Node.js interno do Electron
+                const os = require('os');
+                const interfaces = os.networkInterfaces();
+                let meuIp = 'localhost';
+                let ipPrincipal = null;
+                let ipSecundario = null;
+
+                for (const name in interfaces) {
+                    for (const iface of interfaces[name]) {
+                        const familyV4 = iface.family === 'IPv4' || iface.family === 4;
+                        if (familyV4 && !iface.internal && iface.address.startsWith('192.168.')) {
+                            if (iface.address.startsWith('192.168.1.')) {
+                                ipPrincipal = iface.address;
+                            } else {
+                                ipSecundario = iface.address;
+                            }
+                        }
+                    }
+                }
+
+                meuIp = ipPrincipal || ipSecundario || 'localhost';
+
+                const mobileUrl = `http://${meuIp}:3000/mobile.html`;
+                const kitchenUrl = `http://${meuIp}:3000/kitchen.html`;
+                const cardapioUrl = `http://${meuIp}:3000/cardapiotv.html`;
+
+                mobileBox.innerText = mobileUrl;
+                kitchenBox.innerText = kitchenUrl;
+                cardapioBox.innerText = cardapioUrl;
+                
+                // Gera o QR Code para o link do mobile
+                qrcodeContainer.innerHTML = '';
+                new QRCode(qrcodeContainer, {
+                    text: mobileUrl,
+                    width: 150,
+                    height: 150,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                console.log("IP detectado via Node.js:", meuIp);
+
+            } catch (err) {
+                console.error("Node.js não disponível, tentando via API...", err);
+                
+                // Plano B: Busca via Fetch caso o de cima falhe
+                try {
+                    const response = await fetch('http://localhost:3000/api/get-server-ip');
+                    const data = await response.json();
+                    const ip = data.ip;
+                    if (ip) {
+                        const mobileUrl = `http://${ip}:3000/mobile.html`;
+                        const kitchenUrl = `http://${ip}:3000/kitchen.html`;
+                        const cardapioUrl = `http://${ip}:3000/cardapiotv.html`;
+                        
+                        mobileBox.innerText = mobileUrl;
+                        kitchenBox.innerText = kitchenUrl;
+                        cardapioBox.innerText = cardapioUrl;
+                        
+                        // Gera o QR Code para o link do mobile
+                        qrcodeContainer.innerHTML = '';
+                        new QRCode(qrcodeContainer, {
+                            text: mobileUrl,
+                            width: 150,
+                            height: 150,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    } else {
+                        mobileBox.innerText = "Erro ao detectar IP local.";
+                        kitchenBox.innerText = "Erro ao detectar IP local.";
+                        cardapioBox.innerText = "Erro ao detectar IP local.";
+                    }
+                } catch (fetchErr) {
+                    mobileBox.innerText = "Conecte-se ao Wi-Fi e reinicie o app.";
+                    kitchenBox.innerText = "Conecte-se ao Wi-Fi e reinicie o app.";
+                    cardapioBox.innerText = "Conecte-se ao Wi-Fi e reinicie o app.";
+                }
+            }
+        }
+        window.onload = carregarLinksAjuda;
+    </script>
+</body>
+</html>
